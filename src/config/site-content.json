@@ -49,8 +49,6 @@
 	"isCachePem": false,
 	"hideEditButton": false,
 	"enableCategories": true,
-	"currentHatIndex": 0,
-	"hatFlipped": false,
 	"beian": {
 		"text": "",
 		"link": ""

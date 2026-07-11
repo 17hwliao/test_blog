@@ -7,7 +7,6 @@ import { SiteMetaForm } from './site-meta-form'
 import { ArtImagesSection } from './art-images-section'
 import { BackgroundImagesSection } from './background-images-section'
 import { SocialButtonsSection } from './social-buttons-section'
-import { HatSection } from './hat-section'
 import { BeianForm } from './beian-form'
 
 export type { FileItem, ArtImageUploads, BackgroundImageUploads, SocialButtonImageUploads } from './types'
@@ -117,7 +116,6 @@ export function SiteSettings({
 				</label>
 			</div>
 
-			<HatSection formData={formData} setFormData={setFormData} />
 		</div>
 	)
 }
