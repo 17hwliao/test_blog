@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev --turbopack -p 2025",
     "svg": "node scripts/gen-svgs-index.js",
+    "blog:index:check": "node scripts/rebuild-blog-index.mjs --check",
+    "blog:index:write": "node scripts/rebuild-blog-index.mjs --write",
     "build": "next build",
     "start": "next start",
     "build:cf": "opennextjs-cloudflare build",

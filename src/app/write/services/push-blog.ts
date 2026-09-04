@@ -8,6 +8,29 @@ import { getFileExt } from '@/lib/utils'
 import { toast } from 'sonner'
 import { formatDateTimeLocal } from '../stores/write-store'
 
+const isValidCalendarDay = (value: string) => {
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+	const [year, month, day] = value.split('-').map(Number)
+	const date = new Date(Date.UTC(year, month - 1, day))
+	return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+}
+
+const isoWeeksInYear = (year: number) => {
+	const dec28 = new Date(Date.UTC(year, 11, 28))
+	const isoDay = dec28.getUTCDay() || 7
+	dec28.setUTCDate(dec28.getUTCDate() + 4 - isoDay)
+	const yearStart = new Date(Date.UTC(dec28.getUTCFullYear(), 0, 1))
+	return Math.ceil(((dec28.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7)
+}
+
+const isValidIsoWeek = (value: string) => {
+	if (!/^\d{4}-W\d{2}$/.test(value)) return false
+	const [yearText, weekText] = value.split('-W')
+	const year = Number(yearText)
+	const week = Number(weekText)
+	return week >= 1 && week <= isoWeeksInYear(year)
+}
+
 export type PushBlogParams = {
 	form: {
 		slug: string
@@ -17,7 +40,9 @@ export type PushBlogParams = {
 		date?: string
 		summary?: string
 		hidden?: boolean
-		category?: string
+		category: 'daily' | 'weekly' | 'article'
+		reportDate?: string
+		week?: string
 	}
 	cover?: ImageItem | null
 	images?: ImageItem[]
@@ -29,6 +54,13 @@ export async function pushBlog(params: PushBlogParams): Promise<void> {
 	const { form, cover, images, mode = 'create', originalSlug } = params
 
 	if (!form?.slug) throw new Error('需要 slug')
+	if (!['daily', 'weekly', 'article'].includes(form.category)) throw new Error('文章分类只能是日报、周报或普通文章')
+	if (form.category === 'daily' && !isValidCalendarDay(form.reportDate || '')) {
+		throw new Error('日报必须填写格式为 YYYY-MM-DD 的归属日期')
+	}
+	if (form.category === 'weekly' && !isValidIsoWeek(form.week || '')) {
+		throw new Error('周报必须填写格式为 YYYY-Www 的周次')
+	}
 
 	if (mode === 'edit' && originalSlug && originalSlug !== form.slug) {
 		throw new Error('编辑模式下不支持修改 slug，请保持原 slug 不变')
@@ -127,7 +159,9 @@ export async function pushBlog(params: PushBlogParams): Promise<void> {
 		summary: form.summary,
 		cover: coverPath,
 		hidden: form.hidden,
-		category: form.category
+		category: form.category,
+		...(form.category === 'daily' ? { reportDate: form.reportDate } : {}),
+		...(form.category === 'weekly' ? { week: form.week } : {})
 	}
 
 	const configBlob = await createBlob(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, toBase64Utf8(JSON.stringify(config, null, 2)), 'base64')
@@ -151,7 +185,9 @@ export async function pushBlog(params: PushBlogParams): Promise<void> {
 			summary: form.summary,
 			cover: coverPath,
 			hidden: form.hidden,
-			category: form.category
+			category: form.category,
+			...(form.category === 'daily' ? { reportDate: form.reportDate } : {}),
+			...(form.category === 'weekly' ? { week: form.week } : {})
 		},
 		GITHUB_CONFIG.BRANCH
 	)

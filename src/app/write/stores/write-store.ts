@@ -14,6 +14,21 @@ export const formatDateTimeLocal = (date: Date = new Date()): string => {
 	return `${year}-${month}-${day}T${hours}:${minutes}`
 }
 
+export const formatDateOnly = (date: Date = new Date()): string => {
+	const pad = (n: number) => String(n).padStart(2, '0')
+	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
+/** Returns the ISO-8601 week key used by LecPunch, e.g. 2026-W36. */
+export const formatIsoWeek = (date: Date = new Date()): string => {
+	const utc = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+	const isoDay = utc.getUTCDay() || 7
+	utc.setUTCDate(utc.getUTCDate() + 4 - isoDay)
+	const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1))
+	const week = Math.ceil(((utc.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7)
+	return `${utc.getUTCFullYear()}-W${String(week).padStart(2, '0')}`
+}
+
 type WriteStore = {
 	// Mode state
 	mode: 'create' | 'edit'
@@ -54,7 +69,7 @@ const initialForm: PublishForm = {
 	date: formatDateTimeLocal(),
 	summary: '',
 	hidden: false,
-	category: ''
+	category: 'article'
 }
 
 export const useWriteStore = create<WriteStore>((set, get) => ({
@@ -195,7 +210,9 @@ export const useWriteStore = create<WriteStore>((set, get) => ({
 					date: blog.config.date ? formatDateTimeLocal(new Date(blog.config.date)) : formatDateTimeLocal(),
 					summary: blog.config.summary || '',
 					hidden: blog.config.hidden || false,
-					category: blog.config.category || ''
+					category: blog.config.category === 'daily' || blog.config.category === 'weekly' || blog.config.category === 'article' ? blog.config.category : 'article',
+					reportDate: blog.config.reportDate,
+					week: blog.config.week
 				},
 				images,
 				cover,

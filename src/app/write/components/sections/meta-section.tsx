@@ -1,9 +1,8 @@
 import { motion } from 'motion/react'
 import { useWriteStore } from '../../stores/write-store'
 import { TagInput } from '../ui/tag-input'
-import { useCategories } from '@/hooks/use-categories'
-import { useConfigStore } from '@/app/(home)/stores/config-store'
 import { Select } from '@/components/select'
+import { formatDateOnly, formatIsoWeek } from '../../stores/write-store'
 
 type MetaSectionProps = {
 	delay?: number
@@ -11,13 +10,23 @@ type MetaSectionProps = {
 
 export function MetaSection({ delay = 0 }: MetaSectionProps) {
 	const { form, updateForm } = useWriteStore()
-	console.log(form.date)
+	const categoryOptions = [
+		{ value: 'article', label: '普通文章' },
+		{ value: 'daily', label: '日报' },
+		{ value: 'weekly', label: '周报' }
+	]
 
-	const { categories } = useCategories()
-	const { siteContent } = useConfigStore()
-	const enableCategories = siteContent.enableCategories ?? false
-
-	const categoryOptions = [{ value: '', label: '未分类' }, ...categories.map(cat => ({ value: cat, label: cat }))]
+	const updateCategory = (category: 'daily' | 'weekly' | 'article') => {
+		if (category === 'daily') {
+			updateForm({ category, reportDate: form.reportDate || formatDateOnly(), week: undefined })
+			return
+		}
+		if (category === 'weekly') {
+			updateForm({ category, week: form.week || formatIsoWeek(), reportDate: undefined })
+			return
+		}
+		updateForm({ category, reportDate: undefined, week: undefined })
+	}
 
 	return (
 		<motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay }} className='card relative'>
@@ -33,8 +42,37 @@ export function MetaSection({ delay = 0 }: MetaSectionProps) {
 				/>
 
 				<TagInput tags={form.tags} onChange={tags => updateForm({ tags })} />
-				{enableCategories && (
-					<Select className='w-full text-sm' value={form.category || ''} onChange={value => updateForm({ category: value })} options={categoryOptions} />
+				<Select
+					className='w-full text-sm'
+					value={form.category}
+					onChange={value => updateCategory(value as 'daily' | 'weekly' | 'article')}
+					options={categoryOptions}
+				/>
+				{form.category === 'daily' && (
+					<label className='block text-xs text-gray-600'>
+						日报归属日期
+						<input
+							type='date'
+							required
+							className='bg-card mt-1 w-full rounded-lg border px-3 py-2 text-sm'
+							value={form.reportDate || ''}
+							onChange={e => updateForm({ reportDate: e.target.value })}
+						/>
+						<span className='mt-1 block text-[11px] text-gray-500'>可选择过去日期补写；Election 按此日期汇总，不按发布时间判断。</span>
+					</label>
+				)}
+				{form.category === 'weekly' && (
+					<label className='block text-xs text-gray-600'>
+						周报周次
+						<input
+							type='week'
+							required
+							className='bg-card mt-1 w-full rounded-lg border px-3 py-2 text-sm'
+							value={form.week || ''}
+							onChange={e => updateForm({ week: e.target.value })}
+						/>
+						<span className='mt-1 block text-[11px] text-gray-500'>使用 ISO 周编号，例如 2026-W36。</span>
+					</label>
 				)}
 				<input
 					type='datetime-local'

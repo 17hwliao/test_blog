@@ -1,0 +1,40 @@
+name: Rebuild blog index
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/blogs/**'
+      - 'scripts/rebuild-blog-index.mjs'
+      - '.github/workflows/rebuild-blog-index.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Rebuild derived article index
+        run: node scripts/rebuild-blog-index.mjs --write
+
+      - name: Verify deterministic index
+        run: node scripts/rebuild-blog-index.mjs --check
+
+      - name: Commit index when content changed
+        run: |
+          if git diff --quiet -- public/blogs/index.json; then
+            echo "Index already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/blogs/index.json
+          git commit -m "chore: rebuild blog index"
+          git push

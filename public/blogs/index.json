@@ -1,11 +1,21 @@
 [
   {
+    "slug": "work-day",
+    "title": "test-index ",
+    "tags": [],
+    "date": "2026-09-04T08:39",
+    "summary": "",
+    "hidden": false,
+    "category": "daily",
+    "reportDate": "2026-09-04"
+  },
+  {
     "slug": "study-now",
     "title": "test",
     "tags": [],
     "date": "2026-07-11T18:23",
     "summary": "",
     "hidden": false,
-    "category": ""
+    "category": "article"
   }
 ]
